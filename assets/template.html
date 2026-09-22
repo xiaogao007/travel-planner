@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>出行手账 · 目的地</title>
+<style>
+  :root{
+    --paper:#faf6ee; --card:#fffdf8; --ink:#5a4a3c; --ink2:#9a8a78; --line:#e8dfcf;
+    --border:#f0e4d0; --orange:#f2894b; --green:#96a97c; --blue:#7ea8be;
+    --pink:#e8a5a0; --yellow:#f2c14e; --purple:#b39ddb;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    color:var(--ink); font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+    background-color:var(--paper);
+    background-image:radial-gradient(var(--line) 1.1px, transparent 1.1px);
+    background-size:24px 24px; line-height:1.6;
+  }
+  #app{max-width:1080px; margin:0 auto; padding:20px 20px 10px;}
+  .card{
+    background:var(--card); border:2px solid var(--border); border-radius:18px;
+    box-shadow:0 6px 0 rgba(90,74,60,.06), 0 14px 28px rgba(90,74,60,.07);
+    position:relative;
+  }
+  .sec{margin-top:38px; padding:26px 26px 24px;}
+  .tape{
+    position:absolute; top:-13px; left:50%; width:110px; height:26px;
+    transform:translateX(-50%) rotate(-2.5deg);
+    background:linear-gradient(105deg, rgba(242,193,78,.8), rgba(242,193,78,.55));
+    border-radius:3px; box-shadow:0 2px 5px rgba(0,0,0,.08);
+    border-left:1px dashed rgba(255,255,255,.8); border-right:1px dashed rgba(255,255,255,.8);
+  }
+  .tape-blue{background:linear-gradient(105deg, rgba(126,168,190,.75), rgba(126,168,190,.5));}
+  .tape-pink{background:linear-gradient(105deg, rgba(232,165,160,.8), rgba(232,165,160,.55));}
+  .sec-title{font-size:22px; font-weight:800; display:flex; align-items:baseline; gap:8px; margin-bottom:18px;}
+  .sec-title .en{font-size:11px; color:var(--ink2); letter-spacing:.22em; text-transform:uppercase; font-weight:600;}
+
+  /* ---------- hero ---------- */
+  .hero{text-align:center; padding:46px 16px 8px;}
+  .hero-sticker{
+    width:92px; height:92px; margin:0 auto 14px; border-radius:50%;
+    background:#fff; border:3px solid #fff;
+    box-shadow:0 5px 0 rgba(90,74,60,.1), 0 14px 26px rgba(90,74,60,.12);
+    display:flex; align-items:center; justify-content:center; font-size:46px; transform:rotate(-4deg);
+  }
+  .hero h1{font-size:44px; font-weight:800; letter-spacing:.12em;}
+  .hero .en-name{font-size:12px; color:var(--ink2); letter-spacing:.5em; text-transform:uppercase; margin-top:2px;}
+  .hero-dates{margin:12px 0 16px; font-size:17px; font-weight:700; color:#b06a2c;}
+  .hero-dates::before,.hero-dates::after{content:" ✈ "; font-size:13px; color:var(--ink2);}
+  .chips{display:flex; flex-wrap:wrap; gap:10px; justify-content:center;}
+  .chip{
+    background:#fff; border:2px solid var(--border); border-radius:999px; padding:5px 14px;
+    font-size:13px; font-weight:600; box-shadow:0 3px 0 rgba(90,74,60,.06);
+  }
+  .intro{max-width:620px; margin:18px auto 0; color:var(--ink2); font-size:14px;}
+  .preview-banner{
+    margin:20px auto 0; max-width:640px; background:#fdf3d7; border:2px dashed #e5c96b;
+    border-radius:12px; padding:8px 14px; font-size:13px; color:#8a6d1a; text-align:center;
+  }
+  .deco{position:fixed; font-size:28px; opacity:.45; user-select:none; pointer-events:none; z-index:0;}
+
+  /* ---------- weather ---------- */
+  .weather-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;}
+  .wcard{
+    background:linear-gradient(180deg,#f4f8fb,#fff); border:2px solid var(--border);
+    border-radius:14px; padding:12px 8px; text-align:center;
+  }
+  .w-date{font-size:13px; font-weight:800;} .w-date span{color:var(--ink2); font-weight:500; margin-left:5px; font-size:11px;}
+  .w-icon{font-size:34px; margin:6px 0 2px;}
+  .w-text{font-size:12px; color:var(--ink2);}
+  .w-temp{font-size:16px; font-weight:800; margin-top:3px; color:#b06a2c;}
+  .w-note{
+    background:#fdf3d7; border:2px dashed #e5c96b; border-radius:12px;
+    padding:8px 14px; font-size:13px; color:#8a6d1a; margin-bottom:14px;
+  }
+
+  /* ---------- map ---------- */
+  .map-chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .map-chip{
+    border:2px solid var(--border); background:#fff; color:var(--ink); border-radius:999px;
+    padding:4px 13px; font-size:13px; font-weight:600; cursor:pointer;
+    box-shadow:0 3px 0 rgba(90,74,60,.06); transition:transform .12s;
+  }
+  .map-chip:hover{transform:translateY(-1px);}
+  .map-chip.on{background:var(--c, var(--orange)); border-color:transparent; color:#fff;}
+  .map-wrap{border-radius:14px; overflow:hidden; border:2px solid var(--border); position:relative;}
+  #mapbox{height:430px; width:100%;}
+  .map-fallback{
+    height:430px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; font-size:15px; font-weight:700; background:linear-gradient(180deg,#f4f1e8,#fff);
+  }
+  .map-fallback .big{font-size:52px;}
+  .map-fallback .fb-sub{font-size:13px; font-weight:400; color:var(--ink2); max-width:420px; text-align:center; padding:0 20px;}
+  .map-legend{margin-top:10px; font-size:12px; color:var(--ink2); display:flex; flex-wrap:wrap; gap:6px 16px;}
+  .lg{display:inline-flex; align-items:center; gap:5px;}
+  .lg i{width:12px; height:12px; border-radius:4px; display:inline-block; border:2px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .mkwrap{display:flex; flex-direction:column; align-items:center; filter:drop-shadow(0 3px 3px rgba(0,0,0,.2));}
+  .mk{
+    width:34px; height:34px; border-radius:12px; border:2.5px solid #fff; transform:rotate(-4deg);
+    display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer;
+  }
+  .mk-food{width:27px; height:27px; border-radius:9px; font-size:14px; background:var(--orange);}
+  .mklb{
+    margin-top:3px; font-size:11px; font-weight:800; white-space:nowrap;
+    text-shadow:0 0 3px #fff, 0 0 4px #fff, 0 0 5px #fff;
+  }
+  .iw{font-size:13px; max-width:240px;}
+  .iw-t{font-size:15px; font-weight:800; margin-bottom:4px;}
+  .iw-r{color:#7a6a58; font-size:12px; line-height:1.7;}
+  .iw-n{margin-top:4px; background:#fdf3d7; border-radius:8px; padding:4px 8px; font-size:12px;}
+
+  /* ---------- timeline ---------- */
+  .day-card{margin-top:38px; padding:26px 26px 22px;}
+  .day-head{display:flex; align-items:center; gap:14px; margin-bottom:20px;}
+  .day-badge{
+    min-width:56px; height:56px; border-radius:18px; border:3px solid #fff; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800;
+    box-shadow:0 5px 0 rgba(90,74,60,.12); transform:rotate(-3deg);
+  }
+  .day-title{font-size:20px; font-weight:800;}
+  .day-date{font-size:13px; color:var(--ink2); font-weight:600;}
+  .tl{display:flex; flex-direction:column; gap:0;}
+  .spot{display:grid; grid-template-columns:62px 46px 1fr; gap:0 12px; align-items:flex-start; padding:7px 0;}
+  .spot-time{font-weight:800; font-size:15px; padding-top:8px;}
+  .spot-time span{display:block; font-size:11px; color:var(--ink2); font-weight:600;}
+  .spot-dot{
+    width:42px; height:42px; margin-top:2px; border-radius:14px; background:var(--c);
+    border:2.5px solid #fff; box-shadow:0 4px 0 rgba(90,74,60,.12);
+    display:flex; align-items:center; justify-content:center; font-size:20px; transform:rotate(3deg);
+  }
+  .spot-card{
+    background:#fff; border:2px solid var(--border); border-radius:14px; padding:12px 16px;
+    cursor:default; transition:transform .12s;
+  }
+  .spot-card:hover{transform:translateY(-2px);}
+  .spot-card.meal{background:linear-gradient(180deg,#fff8f1,#fffdf8); border-color:#f3ddc9;}
+  .spot-name{font-size:16.5px; font-weight:800; display:flex; flex-wrap:wrap; align-items:center; gap:8px;}
+  .pill{background:#fdeadb; color:#b06a2c; border-radius:999px; padding:1px 10px; font-size:12px; font-weight:700;}
+  .pill-rate{background:#eef3e4; color:#5f7a45;}
+  .spot-note{margin-top:5px; font-size:13.5px; color:#7a6a58;}
+  .spot-addr{margin-top:4px; font-size:12px; color:var(--ink2);}
+  .transit{
+    margin:2px 0 2px 74px; display:inline-flex; align-items:center; gap:6px;
+    border:2px dashed #e3d7c2; border-radius:999px; padding:2px 13px;
+    font-size:12.5px; color:var(--ink2); background:#fdfaf2; width:fit-content;
+  }
+
+  /* ---------- foods ---------- */
+  .food-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px;}
+  .food-card{
+    background:#fff; border:2px solid var(--border); border-radius:16px; padding:16px;
+    text-align:center; transition:transform .12s;
+  }
+  .food-card:hover{transform:rotate(-1deg) translateY(-2px);}
+  .food-emoji{
+    width:56px; height:56px; margin:0 auto 8px; border-radius:50%;
+    background:linear-gradient(160deg,#fdeadb,#fdf3d7); border:2.5px solid #fff;
+    box-shadow:0 4px 0 rgba(90,74,60,.1); display:flex; align-items:center; justify-content:center; font-size:27px;
+  }
+  .food-name{font-weight:800; font-size:15.5px;}
+  .food-tags{margin-top:5px; font-size:12px; color:#b06a2c; font-weight:600;}
+  .food-price{margin-top:6px; font-size:13px; font-weight:800;}
+  .food-note{margin-top:6px; font-size:12.5px; color:var(--ink2);}
+
+  /* ---------- budget ---------- */
+  .budget{width:100%; border-collapse:collapse;}
+  .budget th{
+    text-align:left; font-size:12px; color:var(--ink2); letter-spacing:.15em; font-weight:700; padding:6px 8px;
+  }
+  .budget td{padding:11px 8px; border-bottom:2px dashed #eee2cc; font-size:14px; vertical-align:top;}
+  .budget .cat{font-weight:800;}
+  .budget .amt{text-align:right; font-weight:800; white-space:nowrap;}
+  .budget tr.total td{
+    border:none; border-top:3px double #e0cfae; background:#fdf3d7;
+    font-weight:800; font-size:16px; color:#b06a2c;
+  }
+  .budget tr.total td:first-child{border-radius:12px 0 0 12px;}
+  .budget tr.total td:last-child{border-radius:0 12px 12px 0;}
+  .budget-note{margin-top:10px; font-size:12.5px; color:var(--ink2);}
+
+  /* ---------- lodging & tips ---------- */
+  .lodging-area{display:flex; align-items:center; gap:10px; font-size:19px; font-weight:800; margin-bottom:8px;}
+  .lodging-reason{color:#7a6a58; font-size:14px;}
+  .picks{margin-top:14px; display:grid; gap:10px;}
+  .pick{
+    background:#fff; border:2px solid var(--border); border-radius:12px; padding:10px 14px;
+    font-size:13.5px; display:flex; gap:8px; align-items:baseline;
+  }
+  .pick b{white-space:nowrap;}
+  .pick span{color:var(--ink2); font-size:12.5px;}
+  .tips-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px;}
+  .tip-card{
+    background:#fff; border:2px solid var(--border); border-radius:14px; padding:14px 16px;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .tip-icon{
+    font-size:24px; width:44px; height:44px; flex:none; border-radius:50%;
+    background:linear-gradient(160deg,#e3eef5,#f2f7fb); border:2.5px solid #fff;
+    box-shadow:0 4px 0 rgba(90,74,60,.1); display:flex; align-items:center; justify-content:center;
+  }
+  .tip-title{font-weight:800; font-size:14.5px;}
+  .tip-text{margin-top:2px; font-size:13px; color:#7a6a58;}
+
+  .foot{text-align:center; color:var(--ink2); font-size:12.5px; padding:36px 0 44px; letter-spacing:.05em;}
+
+  @media (max-width:640px){
+    .hero h1{font-size:30px;}
+    .sec,.day-card{padding:20px 15px 18px; margin-top:30px;}
+    .spot{grid-template-columns:50px 42px 1fr; gap:0 8px;}
+    .spot-time{font-size:13px;}
+    .transit{margin-left:58px;}
+    #mapbox,.map-fallback{height:330px;}
+  }
+  @media print{
+    .deco,.map-chips{display:none;}
+    body{background:#fff;}
+    .card,.day-card{box-shadow:none; break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="application/json" id="plan-data">
+{
+  "meta": {
+    "destination": "成都",
+    "emoji": "🐼",
+    "year": "2026",
+    "startDate": "10-01",
+    "endDate": "10-03",
+    "dayCount": 3,
+    "travelers": "2 人",
+    "theme": "美食 + 人文慢游",
+    "intro": "三天两晚，不赶路、不打卡式旅游，用舌尖和脚步认识这座安逸了两千年的城市。",
+    "center": [104.066, 30.66]
+  },
+  "amap": { "key": "", "securityJsCode": "" },
+  "weather": {
+    "mode": "climate",
+    "note": "出行日期距今较远，高德暂无该时段预报。以下为往年同期气候参考，出发前 3 天内重新生成可获取实时预报。",
+    "days": [
+      { "date": "10-01", "label": "第一天", "dayweather": "多云", "nightweather": "小雨", "daytemp": "25", "nighttemp": "17" },
+      { "date": "10-02", "label": "第二天", "dayweather": "阴", "nightweather": "小雨", "daytemp": "23", "nighttemp": "16" },
+      { "date": "10-03", "label": "第三天", "dayweather": "多云", "nightweather": "多云", "daytemp": "24", "nighttemp": "17" }
+    ]
+  },
+  "days": [
+    {
+      "n": 1,
+      "date": "10-01",
+      "theme": "老成都的烟火气",
+      "spots": [
+        { "type": "sight", "name": "人民公园", "time": "09:30", "stay": "2h", "emoji": "🌳",
+          "lng": 104.060, "lat": 30.662, "address": "青羊区少城路12号", "price": "免费", "rating": "4.5",
+          "note": "鹤鸣茶社喝盖碗茶，体验掏耳朵（约30元），本地人的早晨从这开始。",
+          "photo": "", "fromPrev": null },
+        { "type": "meal", "name": "冒椒拌辣(奎星楼街)", "time": "12:00", "stay": "1h", "emoji": "🍢",
+          "lng": 104.058, "lat": 30.667, "address": "青羊区奎星楼街33号", "price": "人均 ¥80", "rating": "4.3",
+          "note": "冷锅串串界的排队王，签签自助拿，脑花和兔头别错过。",
+          "photo": "", "fromPrev": { "mode": "walk", "minutes": 12, "text": "沿长顺上街向北步行" } },
+        { "type": "sight", "name": "宽窄巷子", "time": "14:00", "stay": "2.5h", "emoji": "🏛️",
+          "lng": 104.055, "lat": 30.665, "address": "青羊区宽窄巷子", "price": "免费", "rating": "4.3",
+          "note": "井巷子的市井墙最出片，掏耳朵、糖油果子，逛吃一下午。",
+          "photo": "", "fromPrev": { "mode": "walk", "minutes": 10, "text": "从奎星楼街穿过小通巷" } },
+        { "type": "meal", "name": "蜀大侠火锅(春熙路)", "time": "18:00", "stay": "1.5h", "emoji": "🍲",
+          "lng": 104.081, "lat": 30.659, "address": "锦江区下东大街216号", "price": "人均 ¥115", "rating": "4.4",
+          "note": "牛油锅底配唯怡豆奶，花千骨和贵妃牛肉是招牌。",
+          "photo": "", "fromPrev": { "mode": "taxi", "minutes": 15, "text": "打车约 4.5 公里" } },
+        { "type": "sight", "name": "春熙路·太古里夜景", "time": "20:00", "stay": "1.5h", "emoji": "🌃",
+          "lng": 104.082, "lat": 30.657, "address": "锦江区春熙路", "price": "免费", "rating": "4.4",
+          "note": "IFS 爬墙熊猫打卡点在七楼雕塑庭院，晚上人少好拍。",
+          "photo": "", "fromPrev": { "mode": "walk", "minutes": 8, "text": "沿东大街步行" } }
+      ]
+    },
+    {
+      "n": 2,
+      "date": "10-02",
+      "theme": "熊猫与三国",
+      "spots": [
+        { "type": "sight", "name": "大熊猫繁育研究基地", "time": "07:30", "stay": "3.5h", "emoji": "🐼",
+          "lng": 104.144, "lat": 30.735, "address": "成华区熊猫大道1375号", "price": "¥55", "rating": "4.7",
+          "note": "开园即入直奔月亮产房，8点前的熊猫最活跃；记得提前在公众号购票。",
+          "photo": "", "fromPrev": null },
+        { "type": "meal", "name": "陈麻婆豆腐(骡马市)", "time": "12:30", "stay": "1h", "emoji": "🥘",
+          "lng": 104.068, "lat": 30.663, "address": "青羊区西玉龙街197号", "price": "人均 ¥60", "rating": "4.2",
+          "note": "麻婆豆腐发源老店，麻辣烫嘴才是正宗，配一碗米饭。",
+          "photo": "", "fromPrev": { "mode": "taxi", "minutes": 30, "text": "打车约 11 公里" } },
+        { "type": "sight", "name": "武侯祠", "time": "14:30", "stay": "2h", "emoji": "🏯",
+          "lng": 104.048, "lat": 30.645, "address": "武侯区武侯祠大街231号", "price": "¥50", "rating": "4.6",
+          "note": "红墙竹影是最出片的机位，请个讲解三国故事会生动很多。",
+          "photo": "", "fromPrev": { "mode": "taxi", "minutes": 15, "text": "打车约 5 公里" } },
+        { "type": "sight", "name": "锦里古街", "time": "16:30", "stay": "2h", "emoji": "🏮",
+          "lng": 104.047, "lat": 30.644, "address": "武侯区武侯祠大街", "price": "免费", "rating": "4.3",
+          "note": "武侯祠旁的川西古街，三大炮和张飞牛肉现做现卖。",
+          "photo": "", "fromPrev": { "mode": "walk", "minutes": 3, "text": "就在武侯祠旁" } },
+        { "type": "meal", "name": "明婷小馆(曹家巷)", "time": "19:00", "stay": "1h", "emoji": "🍜",
+          "lng": 104.066, "lat": 30.673, "address": "金牛区曹家巷", "price": "人均 ¥65", "rating": "4.3",
+          "note": "苍蝇馆子里的米其林，脑花豆腐和糖醋脆皮鱼必点。",
+          "photo": "", "fromPrev": { "mode": "taxi", "minutes": 14, "text": "打车约 6 公里" } }
+      ]
+    },
+    {
+      "n": 3,
+      "date": "10-03",
+      "theme": "文艺收尾·慢慢逛",
+      "spots": [
+        { "type": "sight", "name": "东郊记忆", "time": "09:30", "stay": "2.5h", "emoji": "🎨",
+          "lng": 104.135, "lat": 30.672, "address": "成华区建设南路中段4号", "price": "免费", "rating": "4.4",
+          "note": "老厂房改的文艺园区，红砖墙+火车头+涂鸦，随手拍都是大片。",
+          "photo": "", "fromPrev": null },
+        { "type": "meal", "name": "钢管厂五区小郡肝串串", "time": "12:30", "stay": "1h", "emoji": "🌶️",
+          "lng": 104.117, "lat": 30.663, "address": "成华区双林路", "price": "人均 ¥90", "rating": "4.3",
+          "note": "小郡肝串串鼻祖，干碟蘸一切的快乐最后一晚要补上。",
+          "photo": "", "fromPrev": { "mode": "taxi", "minutes": 10, "text": "打车约 4 公里" } },
+        { "type": "sight", "name": "望平街·香香巷", "time": "15:00", "stay": "2h", "emoji": "🚶",
+          "lng": 104.096, "lat": 30.667, "address": "成华区望平街", "price": "免费", "rating": "4.2",
+          "note": "锦江边的慢行街，网红小店和咖啡聚集地，适合买手信。",
+          "photo": "", "fromPrev": { "mode": "metro", "minutes": 20, "text": "地铁6号线 玉双路站" } },
+        { "type": "sight", "name": "返程出发", "time": "17:30", "stay": "", "emoji": "🧳",
+          "lng": null, "lat": null, "address": "", "price": "", "rating": "",
+          "note": "回酒店取行李后出发：地铁3号线转18号线直达天府机场约70分钟；双流机场更近，地铁30分钟。",
+          "photo": "", "fromPrev": { "mode": "metro", "minutes": 25, "text": "地铁6号线转3号线回酒店" } }
+      ]
+    }
+  ],
+  "foods": [
+    { "name": "甘记肥肠粉(建设巷)", "emoji": "🍜", "tags": ["苍蝇馆子", "本地人排队"],
+      "address": "成华区建设巷", "price": "人均 ¥25", "note": "肥肠粉加节子配军屯锅盔，碳水的快乐。",
+      "lng": 104.116, "lat": 30.678, "photo": "" },
+    { "name": "贺记蛋烘糕", "emoji": "🥞", "tags": ["街头小吃", "老成都童年"],
+      "address": "武侯区大学路", "price": "¥6/个", "note": "奶油肉松和青椒火腿是经典组合。",
+      "lng": 104.062, "lat": 30.648, "photo": "" },
+    { "name": "大龙燚火锅(太古里)", "emoji": "🍲", "tags": ["牛油老火锅", "重口必冲"],
+      "address": "锦江区东大街下东大街段", "price": "人均 ¥120", "note": "锅底够厚，簸箕豆腐和麻辣牛肉是灵魂。",
+      "lng": 104.083, "lat": 30.655, "photo": "" },
+    { "name": "何四孃兔脑壳", "emoji": "🐰", "tags": ["夜宵", "本地暗号"],
+      "address": "金牛区一致西路", "price": "¥10/个", "note": "五香和麻辣各来一个，配冰粉解辣。",
+      "lng": 104.052, "lat": 30.702, "photo": "" }
+  ],
+  "budget": {
+    "perPerson": true,
+    "items": [
+      { "icon": "🎫", "category": "门票", "detail": "熊猫基地 ¥55 + 武侯祠 ¥50", "amount": 105 },
+      { "icon": "🍲", "category": "餐饮", "detail": "3 天约 6 正餐 + 小吃", "amount": 540 },
+      { "icon": "🚕", "category": "市内交通", "detail": "地铁 6 趟 + 打车 5 趟 + 共享单车", "amount": 130 },
+      { "icon": "🏨", "category": "住宿", "detail": "春熙路舒适型酒店 2 晚（双人摊）", "amount": 450 },
+      { "icon": "🎁", "category": "手信+机动", "detail": "熊猫周边、火锅底料、备用金", "amount": 200 }
+    ],
+    "note": "按 2 人同行、舒适型消费估算（人均），仅供参考。"
+  },
+  "lodging": {
+    "area": "春熙路-太古里商圈",
+    "emoji": "🏨",
+    "reason": "地铁 1/2/3 号线交汇，去熊猫基地、宽窄巷子、东郊记忆都顺路；晚上下楼就是夜宵和商圈，安全热闹。",
+    "picks": [
+      { "name": "亚朵酒店(春熙路店)", "desc": "舒适 · 约 ¥450/晚" },
+      { "name": "丽枫酒店(太古里店)", "desc": "高性价比 · 约 ¥320/晚" },
+      { "name": "梦之旅国际青年旅舍", "desc": "背包客 · 约 ¥80/床" }
+    ],
+    "lng": 104.081,
+    "lat": 30.660
+  },
+  "tips": [
+    { "icon": "👟", "title": "穿搭", "text": "10 月初成都 16~25°C，早晚凉带薄外套；逛街日步数 2 万+，穿舒服的鞋。" },
+    { "icon": "☔", "title": "天气", "text": "川西秋季多夜雨，包里常备折叠伞；雨后天凉，注意保暖。" },
+    { "icon": "🎫", "title": "购票", "text": "熊猫基地提前 1~3 天在官方公众号购票；武侯祠可现场买，讲解 20 元值得请。" },
+    { "icon": "🌶️", "title": "吃辣", "text": "成都的微辣≈外地特辣，点单说「微微辣」；火锅配唯怡豆奶是本地解辣标配。" },
+    { "icon": "🚇", "title": "交通", "text": "天府通 App 扫码乘地铁；市区晚高峰打车堵，2 公里内骑共享单车更快。" },
+    { "icon": "🧣", "title": "其他", "text": "人民公园掏耳朵约 30 元（认准穿白褂的师傅）；手信推荐火锅底料和熊猫邮局限定明信片。" }
+  ],
+  "footer": { "source": "数据与地图：高德地图 · 行程由智灵助手生成" }
+}
+</script>
+
+<script>
+var PLAN = JSON.parse(document.getElementById('plan-data').textContent);
+
+/* ================= utils ================= */
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+var PALETTE = [
+  { main:'#f2894b', soft:'#fdeadb' },
+  { main:'#96a97c', soft:'#eef3e4' },
+  { main:'#7ea8be', soft:'#e3eef5' },
+  { main:'#e8a5a0', soft:'#fae9e7' },
+  { main:'#b39ddb', soft:'#efe9f9' },
+  { main:'#f2c14e', soft:'#fdf3d7' }
+];
+function dayColor(i){ return PALETTE[i % PALETTE.length]; }
+var TRANSIT = {
+  walk:{icon:'🚶',label:'步行'}, metro:{icon:'🚇',label:'地铁'}, bus:{icon:'🚌',label:'公交'},
+  taxi:{icon:'🚕',label:'打车'}, train:{icon:'🚄',label:'高铁'}, drive:{icon:'🚗',label:'自驾'},
+  ferry:{icon:'⛴️',label:'轮渡'}
+};
+function weatherIcon(t){
+  t = t || '';
+  if(/雷/.test(t)) return '⛈️';
+  if(/雨/.test(t)) return /小|零星/.test(t) ? '🌦️' : '🌧️';
+  if(/雪/.test(t)) return '❄️';
+  if(/沙|尘|霾/.test(t)) return '😷';
+  if(/雾/.test(t)) return '🌫️';
+  if(/阴/.test(t)) return '☁️';
+  if(/云/.test(t)) return '⛅';
+  if(/晴/.test(t)) return '☀️';
+  return '🌤️';
+}
+
+/* ================= render ================= */
+function hero(){
+  var m = PLAN.meta;
+  var banner = /⚠️|预览版/.test(m.intro || '') ? '<div class="preview-banner">' + esc(m.intro) + '</div>' : '';
+  return '<header class="hero">'
+    + '<div class="hero-sticker">' + esc(m.emoji || '🧳') + '</div>'
+    + '<h1>' + esc(m.destination) + '</h1>'
+    + '<div class="en-name">Travel Journal</div>'
+    + '<div class="hero-dates">' + esc(m.year || '') + ' · ' + esc(m.startDate) + ' — ' + esc(m.endDate)
+    + '　共 ' + esc(m.dayCount) + ' 天</div>'
+    + '<div class="chips">'
+    + '<span class="chip">👥 ' + esc(m.travelers || '') + '</span>'
+    + '<span class="chip">🎯 ' + esc(m.theme || '') + '</span>'
+    + '</div>'
+    + banner
+    + '<p class="intro">' + esc((m.intro || '').replace(/^⚠️.*预览版.*确认」?[。！!]*/, '')) + '</p>'
+    + '</header>';
+}
+function weatherSec(){
+  var w = PLAN.weather || { mode:'climate', note:'', days:[] };
+  var note = (w.mode === 'climate' && w.note) ? '<div class="w-note">📌 ' + esc(w.note) + '</div>' : '';
+  var cards = (w.days || []).map(function(d){
+    var day = d.dayweather || '';
+    var night = (d.nightweather && d.nightweather !== day) ? ' 转 ' + d.nightweather : '';
+    return '<div class="wcard"><div class="w-date">' + esc(d.date)
+      + (d.label ? '<span>' + esc(d.label) + '</span>' : '') + '</div>'
+      + '<div class="w-icon">' + weatherIcon(day) + '</div>'
+      + '<div class="w-text">' + esc(day + night) + '</div>'
+      + '<div class="w-temp">' + esc(d.nighttemp) + '~' + esc(d.daytemp) + '°C</div></div>';
+  }).join('');
+  return '<section class="card sec"><div class="tape"></div>'
+    + '<h2 class="sec-title">🌤️ 天气 <span class="en">Weather</span></h2>'
+    + note + '<div class="weather-row">' + cards + '</div></section>';
+}
+function mapSec(){
+  return '<section class="card sec" id="map-sec"><div class="tape tape-blue"></div>'
+    + '<h2 class="sec-title">🗺️ 行程地图 <span class="en">Map</span></h2>'
+    + '<div class="map-chips" id="map-chips"></div>'
+    + '<div class="map-wrap"><div id="mapbox"></div>'
+    + '<div id="map-fallback" class="map-fallback" hidden></div></div>'
+    + '<div class="map-legend" id="map-legend"></div></section>';
+}
+function transitChip(fp){
+  var t = TRANSIT[fp.mode] || { icon:'🧭', label: fp.mode || '交通' };
+  var min = fp.minutes ? '约 ' + fp.minutes + ' 分钟' : '';
+  var txt = fp.text ? ' · ' + fp.text : '';
+  return '<div class="transit">' + t.icon + ' ' + esc(t.label) + ' ' + min + esc(txt) + '</div>';
+}
+function spotRow(dayIdx, j, s, c){
+  var isMeal = s.type === 'meal';
+  return '<div class="spot" data-day="' + dayIdx + '" data-j="' + j + '">'
+    + '<div class="spot-time">' + esc(s.time || '') + (s.stay ? '<span>停留 ' + esc(s.stay) + '</span>' : '') + '</div>'
+    + '<div class="spot-dot" style="--c:' + c.main + '">' + esc(s.emoji || (isMeal ? '🍽️' : '📍')) + '</div>'
+    + '<div class="spot-card' + (isMeal ? ' meal' : '') + '">'
+    + '<div class="spot-name">' + esc(s.name)
+    + (s.price ? '<span class="pill">' + esc(s.price) + '</span>' : '')
+    + (s.rating ? '<span class="pill pill-rate">⭐ ' + esc(s.rating) + '</span>' : '')
+    + '</div>'
+    + (s.note ? '<div class="spot-note">' + esc(s.note) + '</div>' : '')
+    + (s.address ? '<div class="spot-addr">📍 ' + esc(s.address) + '</div>' : '')
+    + '</div></div>';
+}
+function daysSec(){
+  var html = (PLAN.days || []).map(function(day, i){
+    var c = dayColor(i);
+    var rows = (day.spots || []).map(function(s, j){
+      var chip = (j > 0 && s.fromPrev) ? transitChip(s.fromPrev) : '';
+      return chip + spotRow(i, j, s, c);
+    }).join('');
+    return '<section class="card day-card">'
+      + '<div class="tape" style="background:linear-gradient(105deg,' + c.main + 'cc,' + c.main + '88)"></div>'
+      + '<div class="day-head"><div class="day-badge" style="background:' + c.main + '">D' + esc(day.n) + '</div>'
+      + '<div><div class="day-title">' + esc(day.theme || '') + '</div>'
+      + '<div class="day-date">' + esc(PLAN.meta.year || '') + ' · ' + esc(day.date) + '</div></div></div>'
+      + '<div class="tl">' + rows + '</div></section>';
+  }).join('');
+  return '<div class="days">' + html + '</div>';
+}
+function foodsSec(){
+  var cards = (PLAN.foods || []).map(function(f){
+    return '<div class="food-card">'
+      + '<div class="food-emoji">' + esc(f.emoji || '🍜') + '</div>'
+      + '<div class="food-name">' + esc(f.name) + '</div>'
+      + (f.tags && f.tags.length ? '<div class="food-tags">' + f.tags.map(function(t){ return '#' + esc(t); }).join(' ') + '</div>' : '')
+      + (f.price ? '<div class="food-price">💰 ' + esc(f.price) + '</div>' : '')
+      + (f.note ? '<div class="food-note">' + esc(f.note) + '</div>' : '')
+      + '</div>';
+  }).join('');
+  if (!cards) return '';
+  return '<section class="card sec"><div class="tape tape-pink"></div>'
+    + '<h2 class="sec-title">🍜 美食加餐 <span class="en">More Bites</span></h2>'
+    + '<div class="food-grid">' + cards + '</div></section>';
+}
+function budgetSec(){
+  var b = PLAN.budget; if (!b) return '';
+  var total = (b.items || []).reduce(function(a, it){ return a + (Number(it.amount) || 0); }, 0);
+  var rows = (b.items || []).map(function(it){
+    return '<tr><td class="cat">' + esc(it.icon || '') + ' ' + esc(it.category) + '</td>'
+      + '<td style="color:#7a6a58">' + esc(it.detail || '') + '</td>'
+      + '<td class="amt">¥ ' + (Number(it.amount) || 0) + '</td></tr>';
+  }).join('');
+  return '<section class="card sec"><div class="tape"></div>'
+    + '<h2 class="sec-title">💰 预算参考 <span class="en">Budget</span>' + (b.perPerson ? '<span class="en">/ 人均</span>' : '') + '</h2>'
+    + '<table class="budget"><tr><th style="width:22%">项目</th><th>说明</th><th style="text-align:right">金额</th></tr>'
+    + rows
+    + '<tr class="total"><td colspan="2">合计（人均）</td><td class="amt">¥ ' + total + '</td></tr></table>'
+    + (b.note ? '<div class="budget-note">' + esc(b.note) + '</div>' : '')
+    + '</section>';
+}
+function lodgingSec(){
+  var l = PLAN.lodging; if (!l) return '';
+  var picks = (l.picks || []).map(function(p){
+    if (typeof p === 'string') return '<div class="pick">🏨 <b>' + esc(p) + '</b></div>';
+    return '<div class="pick">' + esc(l.emoji || '🏨') + ' <b>' + esc(p.name) + '</b><span>' + esc(p.desc || '') + '</span></div>';
+  }).join('');
+  return '<section class="card sec"><div class="tape tape-blue"></div>'
+    + '<h2 class="sec-title">🏨 住哪儿 <span class="en">Stay</span></h2>'
+    + '<div class="lodging-area">' + esc(l.emoji || '🏨') + ' ' + esc(l.area) + '</div>'
+    + '<div class="lodging-reason">' + esc(l.reason || '') + '</div>'
+    + (picks ? '<div class="picks">' + picks + '</div>' : '')
+    + '</section>';
+}
+function tipsSec(){
+  var cards = (PLAN.tips || []).map(function(t){
+    return '<div class="tip-card"><div class="tip-icon">' + esc(t.icon || '💡') + '</div>'
+      + '<div><div class="tip-title">' + esc(t.title) + '</div>'
+      + '<div class="tip-text">' + esc(t.text) + '</div></div></div>';
+  }).join('');
+  if (!cards) return '';
+  return '<section class="card sec"><div class="tape tape-pink"></div>'
+    + '<h2 class="sec-title">💡 出行贴士 <span class="en">Tips</span></h2>'
+    + '<div class="tips-grid">' + cards + '</div></section>';
+}
+function foot(){
+  var d = new Date();
+  var pad = function(n){ return String(n).padStart ? String(n).padStart(2,'0') : (n < 10 ? '0' + n : '' + n); };
+  var ds = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  return '<footer class="foot">✂️ ───── 本页生成于 ' + ds + ' · '
+    + esc((PLAN.footer && PLAN.footer.source) || '数据与地图：高德地图') + ' ─────</footer>';
+}
+
+function render(){
+  document.title = '出行手账 · ' + PLAN.meta.destination + ' ' + (PLAN.meta.year ? PLAN.meta.year + '·' : '') + PLAN.meta.startDate;
+  var app = document.getElementById('app');
+  app.innerHTML = hero() + weatherSec() + mapSec() + daysSec() + foodsSec() + budgetSec() + lodgingSec() + tipsSec() + foot();
+  var decos = [['✈️','8px','4%',8],['🎒','92%','6%',-10],['📷','5%','58%',10],['🗺️','93%','60%',-8]];
+  decos.forEach(function(d){
+    var el = document.createElement('div');
+    el.className = 'deco'; el.textContent = d[0];
+    el.style.left = d[1]; el.style.top = d[2]; el.style.transform = 'rotate(' + d[3] + 'deg)';
+    document.body.appendChild(el);
+  });
+}
+
+/* ================= map ================= */
+var map = null, dayMarkers = [], foodMarkers = [], lodgingMarker = null, polylines = [], allMarkers = [];
+
+function markerHtml(emoji, bg, label, labelColor, small){
+  return '<div class="mkwrap"><div class="mk' + (small ? ' mk-food' : '') + '" style="background:' + bg + '">'
+    + esc(emoji) + '</div>'
+    + (label ? '<div class="mklb" style="' + (labelColor ? 'color:' + labelColor : '') + '">' + esc(label) + '</div>' : '')
+    + '</div>';
+}
+function openInfo(marker, s){
+  var lines = '';
+  if (s.time) lines += '<div class="iw-r">🕘 ' + esc(s.time) + (s.stay ? ' · 停留 ' + esc(s.stay) : '') + '</div>';
+  if (s.price) lines += '<div class="iw-r">🎫 ' + esc(s.price) + '</div>';
+  if (s.rating) lines += '<div class="iw-r">⭐ ' + esc(s.rating) + '</div>';
+  if (s.note) lines += '<div class="iw-n">' + esc(s.note) + '</div>';
+  if (s.address) lines += '<div class="iw-r">📍 ' + esc(s.address) + '</div>';
+  var iw = new AMap.InfoWindow({
+    content: '<div class="iw"><div class="iw-t">' + esc(s.emoji || '') + ' ' + esc(s.name) + '</div>' + lines + '</div>',
+    offset: new AMap.Pixel(0, -44)
+  });
+  iw.open(map, marker.getPosition());
+}
+function initMap(){
+  map = new AMap.Map('mapbox', {
+    zoom: 12, center: PLAN.meta.center || [104.066, 30.66],
+    mapStyle: 'amap://styles/whitesmoke', viewMode: '2D'
+  });
+  map.addControl(new AMap.Scale());
+  map.addControl(new AMap.ToolBar({ position: 'RT' }));
+
+  (PLAN.days || []).forEach(function(day, i){
+    var c = dayColor(i);
+    var path = [];
+    (day.spots || []).forEach(function(s){
+      if (!s || s.lng == null || s.lat == null) return;
+      path.push([s.lng, s.lat]);
+      var m = new AMap.Marker({
+        position: [s.lng, s.lat],
+        anchor: 'bottom-center',
+        content: markerHtml(s.emoji || (s.type === 'meal' ? '🍽️' : '📍'), c.main, s.name, c.main, false),
+        title: s.name, zIndex: 130
+      });
+      m._day = i; m._spot = s;
+      m.on('click', function(){ openInfo(m, s); });
+      dayMarkers.push(m);
+    });
+    if (path.length > 1){
+      var pl = new AMap.Polyline({
+        path: path, strokeColor: c.main, strokeWeight: 4, strokeOpacity: 0.85,
+        strokeStyle: 'dashed', strokeDasharray: [8, 10], showDir: true, zIndex: 60
+      });
+      pl._day = i;
+      polylines.push(pl);
+    }
+  });
+
+  (PLAN.foods || []).forEach(function(f){
+    if (!f || f.lng == null || f.lat == null) return;
+    var m = new AMap.Marker({
+      position: [f.lng, f.lat], anchor: 'bottom-center', zIndex: 110,
+      content: markerHtml(f.emoji || '🍜', '#f2894b', '', '', true),
+      title: f.name
+    });
+    m._food = true;
+    m.on('click', function(){ openInfo(m, f); });
+    foodMarkers.push(m);
+  });
+
+  if (PLAN.lodging && PLAN.lodging.lng != null){
+    var lm = new AMap.Marker({
+      position: [PLAN.lodging.lng, PLAN.lodging.lat], anchor: 'bottom-center', zIndex: 120,
+      content: markerHtml(PLAN.lodging.emoji || '🏨', '#5a4a3c', PLAN.lodging.area, '#5a4a3c', false),
+      title: '住宿推荐：' + PLAN.lodging.area
+    });
+    lm.on('click', function(){ openInfo(lm, { name: '住宿推荐 · ' + PLAN.lodging.area, note: PLAN.lodging.reason }); });
+    lodgingMarker = lm;
+  }
+
+  allMarkers = dayMarkers.concat(foodMarkers);
+  if (lodgingMarker) allMarkers.push(lodgingMarker);
+  map.add(allMarkers);
+  map.add(polylines);
+  if (allMarkers.length) map.setFitView(allMarkers, false, [70, 70, 70, 70]);
+
+  buildChips();
+  buildLegend();
+}
+function buildChips(){
+  var box = document.getElementById('map-chips'); if (!box) return;
+  var html = '<button class="map-chip on" data-f="all">全部</button>';
+  (PLAN.days || []).forEach(function(day, i){
+    html += '<button class="map-chip" data-f="' + i + '" style="--c:' + dayColor(i).main + '">D' + esc(day.n) + ' ' + esc(day.theme || '') + '</button>';
+  });
+  if ((PLAN.foods || []).some(function(f){ return f && f.lng != null; })){
+    html += '<button class="map-chip" data-f="food" style="--c:#f2894b">🍜 加餐美食</button>';
+  }
+  box.innerHTML = html;
+  box.querySelectorAll('.map-chip').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      box.querySelectorAll('.map-chip').forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      applyFilter(btn.getAttribute('data-f'));
+    });
+  });
+}
+function buildLegend(){
+  var box = document.getElementById('map-legend'); if (!box) return;
+  var html = (PLAN.days || []).map(function(day, i){
+    return '<span class="lg"><i style="background:' + dayColor(i).main + '"></i>D' + esc(day.n) + ' ' + esc(day.theme || '') + '</span>';
+  }).join('');
+  html += '<span class="lg">🍜 加餐美食</span><span class="lg">🏨 推荐住宿</span><span class="lg">➖ 虚线为当日动线</span>';
+  box.innerHTML = html;
+}
+function applyFilter(f){
+  var match = function(m){
+    if (f === 'all') return true;
+    if (f === 'food') return !!m._food;
+    return m._day === Number(f);
+  };
+  allMarkers.forEach(function(m){ if (match(m)) m.show(); else m.hide(); });
+  polylines.forEach(function(p){ if (f === 'all' || p._day === Number(f)) p.show(); else p.hide(); });
+  var vis = allMarkers.filter(match);
+  if (map && vis.length) map.setFitView(vis, false, [70, 70, 70, 70]);
+}
+function mapFail(title, sub){
+  var box = document.getElementById('mapbox'), fb = document.getElementById('map-fallback');
+  if (box) box.style.display = 'none';
+  if (fb){
+    fb.hidden = false;
+    fb.innerHTML = '<div class="big">🗺️</div><div>' + esc(title) + '</div><div class="fb-sub">' + esc(sub) + '</div>';
+  }
+}
+function loadAmap(){
+  var key = (PLAN.amap && PLAN.amap.key || '').trim();
+  if (!key){
+    mapFail('未配置高德地图 Key', '在 ~/.travel-planner.json 中填入 amapJsKey 与 amapSecurityJsCode 后重新生成，即可看到交互地图（景点贴纸 + 当日动线）。');
+    return;
+  }
+  window._AMapSecurityConfig = { securityJsCode: (PLAN.amap.securityJsCode || '').trim() };
+  var s = document.createElement('script');
+  s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(key) + '&plugin=AMap.ToolBar,AMap.Scale';
+  s.onerror = function(){ mapFail('高德地图脚本加载失败', '请检查网络后刷新重试；其余行程内容不受影响。'); };
+  s.onload = function(){
+    try { initMap(); }
+    catch (e){ mapFail('地图初始化失败', (e && e.message) ? e.message : '请检查 Key 类型是否为「Web端(JS API)」'); }
+  };
+  document.head.appendChild(s);
+}
+
+/* ================= boot ================= */
+render();
+loadAmap();
+document.querySelectorAll('.spot').forEach(function(el){
+  el.addEventListener('click', function(){
+    if (!map) return;
+    var dayIdx = Number(el.getAttribute('data-day'));
+    var j = Number(el.getAttribute('data-j'));
+    var day = (PLAN.days || [])[dayIdx];
+    var s = day && day.spots && day.spots[j];
+    if (!s || s.lng == null) return;
+    var mk = dayMarkers.filter(function(m){ return m._day === dayIdx && m._spot === s; })[0];
+    map.setZoomAndCenter(15, [s.lng, s.lat]);
+    if (mk) openInfo(mk, s);
+  });
+});
+</script>
+</body>
+</html>

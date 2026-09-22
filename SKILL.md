@@ -10,7 +10,7 @@ description: 旅行出行规划：输入日期+目的地+偏好，调用高德�
 
 ## 技能文件
 
-- `references/setup-amap.md` — 高德 Key 申请与 ZCode MCP 配置步骤（**前置依赖不满足时必读**）
+- `references/setup-amap.md` — 高德 Key 申请与 MCP 配置步骤（**前置依赖不满足时必读**）
 - `references/amap-mcp.md` — 高德 MCP 工具清单与取数策略（取数阶段必读）
 - `references/page-design.md` — 页面模板结构、PLAN 数据 schema、行程编排与文案标准（生成页面阶段必读）
 - `assets/template.html` — 页面模板本体（复制后填充数据，禁止从零重写页面）
